@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { SharedModule } from './shared/shared.module';
 import { AppConfig } from './shared/config/app.config';
+import { HarModule } from './har/har.module';
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { AppConfig } from './shared/config/app.config';
         limit: AppConfig.throttle.limit,
       },
     ]),
-    // Feature modules will be imported here
+    HarModule,
   ],
 })
 export class AppModule {}

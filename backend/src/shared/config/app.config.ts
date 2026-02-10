@@ -17,7 +17,7 @@ export const AppConfig = {
 
   // HAR Upload & Filtering Configuration
   har: {
-    maxSizeMB: parseInt(process.env.MAX_HAR_SIZE_MB || '50', 10),
+    maxSizeMB: parseInt(process.env.MAX_HAR_SIZE_MB || '100', 10),
     maxEntries: parseInt(process.env.MAX_HAR_ENTRIES || '500', 10),
     bodyTruncateLimit: parseInt(process.env.BODY_TRUNCATE_LIMIT || '2000', 10),
   },
@@ -58,8 +58,8 @@ export function validateConfig(): void {
   }
 
   // Validate numeric bounds
-  if (AppConfig.har.maxSizeMB <= 0 || AppConfig.har.maxSizeMB > 100) {
-    throw new Error('MAX_HAR_SIZE_MB must be between 1 and 100');
+  if (AppConfig.har.maxSizeMB <= 0 || AppConfig.har.maxSizeMB > 200) {
+    throw new Error('MAX_HAR_SIZE_MB must be between 1 and 200');
   }
 
   if (AppConfig.har.maxEntries <= 0 || AppConfig.har.maxEntries > 1000) {

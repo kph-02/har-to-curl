@@ -20,6 +20,7 @@ export interface HarRequest {
   httpVersion: string;
   headers: HarHeader[];
   queryString: HarQueryParam[];
+  cookies?: HarCookie[];
   postData?: HarPostData;
   headersSize: number;
   bodySize: number;
@@ -31,6 +32,7 @@ export interface HarResponse {
   statusText: string;
   httpVersion: string;
   headers: HarHeader[];
+  cookies?: HarCookie[];
   content: HarContent;
   redirectURL: string;
   headersSize: number;
@@ -47,6 +49,17 @@ export interface HarHeader {
 export interface HarQueryParam {
   name: string;
   value: string;
+  comment?: string;
+}
+
+export interface HarCookie {
+  name: string;
+  value: string;
+  path?: string;
+  domain?: string;
+  expires?: string;
+  httpOnly?: boolean;
+  secure?: boolean;
   comment?: string;
 }
 
@@ -95,4 +108,5 @@ export interface HarEntrySummary {
   timestamp: string;
   size: number;
   duration: number;
+  duplicateCount: number;
 }
