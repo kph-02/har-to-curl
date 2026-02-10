@@ -15,7 +15,7 @@ Full-stack application for reverse-engineering APIs from HAR files using LLM-pow
 ## Tech Stack
 
 - **Frontend**: Next.js (App Router) + shadcn/ui + Tailwind CSS
-- **Backend**: NestJS + OpenAI SDK
+- **Backend**: NestJS + OpenAI SDK + Axios
 - **Architecture**: BFF (Backend-for-Frontend) pattern
 
 ## Monorepo Structure
@@ -32,6 +32,7 @@ reverse-api/
 │   ├── src/
 │   │   ├── har/       # HAR upload & parsing
 │   │   ├── llm/       # LLM orchestration & redaction
+│   │   ├── curl/      # Curl execution endpoint + service
 │   │   └── shared/    # Config, filters, guards, session store
 │   └── package.json
 ├── .env.example       # Environment variables template
@@ -119,7 +120,11 @@ All configurable parameters are defined in `.env.example`. Key settings:
 - `MAX_HAR_ENTRIES` (default: 500): Maximum HAR entries to process
 - `MAX_HAR_SIZE_MB` (default: 100): Maximum HAR file size in MB (max: 200)
 - `BODY_TRUNCATE_LIMIT` (default: 10000): Max characters for request/response body previews sent to the LLM
+- `CURL_EXEC_TIMEOUT_MS` (default: 10000): Timeout for server-side execution via `POST /curl/execute`
+- `CURL_EXEC_MAX_RESPONSE_MB` (default: 1): Max upstream response body size (MB)
+- `CURL_EXEC_MAX_REQUEST_BODY_MB` (default: 1): Max outbound request body size (MB)
 - `SESSION_STORE_TTL_MINUTES` (default: 30): Session expiration time
+- `THROTTLE_TTL` / `THROTTLE_LIMIT`: Rate limiting window + max requests per window (applies to API routes)
 - `PORT` (default: 3001): Backend server port
 
 ### Frontend Configuration
@@ -173,7 +178,8 @@ This eliminates CORS issues and provides a single origin for the application.
 - `POST /har/upload`: Upload and parse HAR file
 - `POST /har/analyze`: LLM analysis to match API description
 - `GET /har/sessions/:sessionId/entries/:index`: Fetch a full HAR entry for inspection
-- `POST /curl/execute`: Execute an edited `ParsedRequest` and return `{ status, headers, body, duration }`
+- `POST /curl/execute`: Execute an edited `ParsedRequest` and return `{ status, statusText, headers, body, duration }`
+  - Target non-2xx responses (4xx/5xx) are returned as normal results; only connection-level failures/SSRF/validation return API errors.
 
 ## Deployment
 
@@ -210,7 +216,7 @@ BACKEND_URL=https://api.yourdomain.com
 ### Production hardening checklist (recommended)
 
 - Replace in-memory session store with Redis
-- Add request execution SSRF protection (DNS/IP allow/deny, redirect handling)
+- Add network-level egress controls (VPC egress, firewall rules) to further mitigate SSRF/DNS rebinding
 - Add auth to the app itself (even basic) if exposed publicly
 - Add structured logging + error monitoring (ensure no secrets are emitted)
 
@@ -224,7 +230,12 @@ npm run test
 # Backend e2e tests
 npm run test:e2e
 
+# Frontend build (typecheck + production build)
+cd ../frontend
+npm run build
+
 # Coverage
+cd ../backend
 npm run test:cov
 ```
 
