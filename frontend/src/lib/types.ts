@@ -17,6 +17,18 @@ export interface UploadResponse {
   entries: HarEntrySummary[];
 }
 
+export interface AnalyzeHarRequest {
+  sessionId: string;
+  description: string;
+  selectedIndices?: number[];
+}
+
+export interface AnalyzeHarResponse {
+  matchedEntryIndex: number;
+  parsedRequest: ParsedRequest;
+  curlCommand: string;
+}
+
 export interface HarCookie {
   name: string;
   value: string;

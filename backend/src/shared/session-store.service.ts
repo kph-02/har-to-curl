@@ -1,9 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { AppConfig } from './config/app.config';
 import { HarEntry } from './models/har-entry.model';
 
-interface SessionData {
+export interface SessionData {
   unredactedEntries: HarEntry[];
   createdAt: Date;
 }
@@ -14,7 +14,6 @@ interface SessionData {
  */
 @Injectable()
 export class SessionStoreService {
-  private readonly logger = new Logger(SessionStoreService.name);
   private readonly store = new Map<string, SessionData>();
   private readonly ttlMinutes = AppConfig.session.ttlMinutes;
 
@@ -26,7 +25,6 @@ export class SessionStoreService {
       unredactedEntries: entries,
       createdAt: new Date(),
     });
-    this.logger.log(`Session ${sessionId} created with ${entries.length} entries`);
   }
 
   /**
@@ -42,7 +40,6 @@ export class SessionStoreService {
       (Date.now() - session.createdAt.getTime()) / 1000 / 60;
     if (ageMinutes > this.ttlMinutes) {
       this.store.delete(sessionId);
-      this.logger.warn(`Session ${sessionId} expired (age: ${ageMinutes.toFixed(1)}min)`);
       return null;
     }
 
@@ -54,7 +51,6 @@ export class SessionStoreService {
    */
   delete(sessionId: string): void {
     this.store.delete(sessionId);
-    this.logger.log(`Session ${sessionId} deleted`);
   }
 
   /**
@@ -63,18 +59,13 @@ export class SessionStoreService {
   @Cron(CronExpression.EVERY_5_MINUTES)
   cleanupExpiredSessions(): void {
     const now = Date.now();
-    let cleaned = 0;
 
     for (const [sessionId, session] of this.store.entries()) {
       const ageMinutes = (now - session.createdAt.getTime()) / 1000 / 60;
       if (ageMinutes > this.ttlMinutes) {
         this.store.delete(sessionId);
-        cleaned++;
       }
     }
 
-    if (cleaned > 0) {
-      this.logger.log(`Cleaned up ${cleaned} expired sessions`);
-    }
   }
 }

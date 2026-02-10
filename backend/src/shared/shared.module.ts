@@ -4,6 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { join } from 'path';
 import { SessionStoreService } from './session-store.service';
 import { SsrfGuard } from './guards/ssrf.guard';
+import { CurlBuilderService } from './services/curl-builder.service';
 
 /**
  * Shared module with globally available services
@@ -21,7 +22,7 @@ import { SsrfGuard } from './guards/ssrf.guard';
     }),
     ScheduleModule.forRoot(),
   ],
-  providers: [SessionStoreService, SsrfGuard],
-  exports: [SessionStoreService, SsrfGuard],
+  providers: [SessionStoreService, SsrfGuard, CurlBuilderService],
+  exports: [SessionStoreService, SsrfGuard, CurlBuilderService],
 })
 export class SharedModule {}

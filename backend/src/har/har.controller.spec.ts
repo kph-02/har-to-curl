@@ -9,12 +9,14 @@ import { HarParserService } from './har-parser.service';
 import { HarFilterService } from './har-filter.service';
 import { SessionStoreService } from '../shared/session-store.service';
 import { HarEntry } from '../shared/models/har-entry.model';
+import { LlmService } from '../llm/llm.service';
 
 describe('HarController', () => {
   let controller: HarController;
   let parserService: HarParserService;
   let filterService: HarFilterService;
   let sessionStore: SessionStoreService;
+  let llmService: LlmService;
 
   const mockEntry: HarEntry = {
     startedDateTime: '2024-01-01T00:00:00.000Z',
@@ -44,13 +46,22 @@ describe('HarController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [HarController],
-      providers: [HarParserService, HarFilterService, SessionStoreService],
+      providers: [
+        HarParserService,
+        HarFilterService,
+        SessionStoreService,
+        {
+          provide: LlmService,
+          useValue: { analyzeSession: jest.fn() },
+        },
+      ],
     }).compile();
 
     controller = module.get<HarController>(HarController);
     parserService = module.get<HarParserService>(HarParserService);
     filterService = module.get<HarFilterService>(HarFilterService);
     sessionStore = module.get<SessionStoreService>(SessionStoreService);
+    llmService = module.get<LlmService>(LlmService);
   });
 
   it('should be defined', () => {
@@ -233,6 +244,75 @@ describe('HarController', () => {
       expect(() => controller.getEntry(sessionId, -1)).toThrow(
         BadRequestException,
       );
+    });
+  });
+
+  describe('POST /har/analyze', () => {
+    it('should return analysis result for valid session', async () => {
+      const mockFile = {
+        originalname: 'test.har',
+        buffer: Buffer.from(
+          JSON.stringify({
+            log: {
+              entries: [mockEntry],
+            },
+          }),
+        ),
+        size: 1024,
+      } as Express.Multer.File;
+
+      const { sessionId } = controller.uploadHar(mockFile);
+      (llmService.analyzeSession as jest.Mock).mockResolvedValue({
+        matchedEntryIndex: 0,
+        parsedRequest: {
+          method: 'GET',
+          url: 'https://example.com/api',
+          headers: {},
+          queryParams: {},
+        },
+        curlCommand: "curl 'https://example.com/api'",
+      });
+
+      const result = await controller.analyzeHar({
+        sessionId,
+        description: 'api',
+      });
+
+      expect(result.matchedEntryIndex).toBe(0);
+      expect(result.curlCommand).toContain('curl');
+    });
+
+    it('should throw NotFoundException for expired session', async () => {
+      await expect(
+        controller.analyzeHar({
+          sessionId: 'missing',
+          description: 'api',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException for invalid selected indices', async () => {
+      const mockFile = {
+        originalname: 'test.har',
+        buffer: Buffer.from(
+          JSON.stringify({
+            log: {
+              entries: [mockEntry],
+            },
+          }),
+        ),
+        size: 1024,
+      } as Express.Multer.File;
+
+      const { sessionId } = controller.uploadHar(mockFile);
+
+      await expect(
+        controller.analyzeHar({
+          sessionId,
+          description: 'api',
+          selectedIndices: [99],
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

@@ -13,13 +13,14 @@ export const AppConfig = {
   llm: {
     singlePassThreshold: parseInt(process.env.LLM_SINGLE_PASS_THRESHOLD || '15', 10),
     topKCandidates: parseInt(process.env.LLM_TOP_K_CANDIDATES || '3', 10),
+    maxRetries: parseInt(process.env.LLM_MAX_RETRIES || '2', 10),
   },
 
   // HAR Upload & Filtering Configuration
   har: {
     maxSizeMB: parseInt(process.env.MAX_HAR_SIZE_MB || '100', 10),
     maxEntries: parseInt(process.env.MAX_HAR_ENTRIES || '500', 10),
-    bodyTruncateLimit: parseInt(process.env.BODY_TRUNCATE_LIMIT || '2000', 10),
+    bodyTruncateLimit: parseInt(process.env.BODY_TRUNCATE_LIMIT || '10000', 10),
   },
 
   // Session Management Configuration
@@ -68,5 +69,13 @@ export function validateConfig(): void {
 
   if (AppConfig.llm.topKCandidates <= 0 || AppConfig.llm.topKCandidates > 10) {
     throw new Error('LLM_TOP_K_CANDIDATES must be between 1 and 10');
+  }
+
+  if (AppConfig.llm.maxRetries < 0 || AppConfig.llm.maxRetries > 5) {
+    throw new Error('LLM_MAX_RETRIES must be between 0 and 5');
+  }
+
+  if (AppConfig.har.bodyTruncateLimit <= 0 || AppConfig.har.bodyTruncateLimit > 200000) {
+    throw new Error('BODY_TRUNCATE_LIMIT must be between 1 and 200000');
   }
 }

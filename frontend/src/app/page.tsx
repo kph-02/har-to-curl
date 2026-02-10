@@ -5,7 +5,9 @@ import * as React from "react";
 import { HarUploadZone } from "@/components/har-upload-zone";
 import { EntryList } from "@/components/entry-list";
 import { RequestDetailPanel } from "@/components/request-detail-panel";
-import type { HarEntrySummary, UploadResponse } from "@/lib/types";
+import { ApiDescriptionForm } from "@/components/api-description-form";
+import { CurlResultPanel } from "@/components/curl-result-panel";
+import type { AnalyzeHarResponse, HarEntrySummary, UploadResponse } from "@/lib/types";
 
 const DEFAULT_MAX_SIZE_MB: number = 100;
 
@@ -17,6 +19,7 @@ export default function Home() {
   );
   const [inspectedEntry, setInspectedEntry] = React.useState<HarEntrySummary | null>(null);
   const [isDetailOpen, setIsDetailOpen] = React.useState<boolean>(false);
+  const [analyzeResult, setAnalyzeResult] = React.useState<AnalyzeHarResponse | null>(null);
 
   const handleUploadSuccess = (response: UploadResponse): void => {
     setSessionId(response.sessionId);
@@ -24,6 +27,7 @@ export default function Home() {
     setSelectedIndices(new Set<number>());
     setInspectedEntry(null);
     setIsDetailOpen(false);
+    setAnalyzeResult(null);
   };
 
   const handleInspectEntry = (entry: HarEntrySummary): void => {
@@ -47,11 +51,26 @@ export default function Home() {
             />
 
             {sessionId && entries.length > 0 ? (
-              <EntryList
+              <>
+                <EntryList
+                  entries={entries}
+                  selectedIndices={selectedIndices}
+                  onSelectedIndicesChange={setSelectedIndices}
+                  onInspectEntry={handleInspectEntry}
+                />
+                <ApiDescriptionForm
+                  sessionId={sessionId}
+                  selectedIndices={selectedIndices}
+                  onAnalyzeSuccess={setAnalyzeResult}
+                />
+              </>
+            ) : null}
+
+            {analyzeResult ? (
+              <CurlResultPanel
+                matchedEntryIndex={analyzeResult.matchedEntryIndex}
+                curlCommand={analyzeResult.curlCommand}
                 entries={entries}
-                selectedIndices={selectedIndices}
-                onSelectedIndicesChange={setSelectedIndices}
-                onInspectEntry={handleInspectEntry}
               />
             ) : null}
           </div>

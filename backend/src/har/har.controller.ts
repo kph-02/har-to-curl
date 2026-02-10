@@ -9,6 +9,9 @@ import {
   Param,
   NotFoundException,
   ParseIntPipe,
+  Body,
+  UnprocessableEntityException,
+  BadGatewayException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { v4 as uuidv4 } from 'uuid';
@@ -17,6 +20,9 @@ import { HarFilterService } from './har-filter.service';
 import { SessionStoreService } from '../shared/session-store.service';
 import { AppConfig } from '../shared/config/app.config';
 import { HarEntrySummary } from '../shared/models/har-entry.model';
+import { AnalyzeHarDto } from './dto/analyze-har.dto';
+import { LlmService } from '../llm/llm.service';
+import { ParsedRequest } from '../shared/models/parsed-request.model';
 
 @Controller('har')
 export class HarController {
@@ -24,6 +30,7 @@ export class HarController {
     private readonly parserService: HarParserService,
     private readonly filterService: HarFilterService,
     private readonly sessionStore: SessionStoreService,
+    private readonly llmService: LlmService,
   ) {}
 
   /**
@@ -103,5 +110,42 @@ export class HarController {
 
     // Return full entry
     return entries[index];
+  }
+
+  /**
+   * POST /har/analyze
+   * Analyze a session with an LLM and return a matched curl command
+   */
+  @Post('analyze')
+  async analyzeHar(
+    @Body() body: AnalyzeHarDto,
+  ): Promise<{ matchedEntryIndex: number; parsedRequest: ParsedRequest; curlCommand: string }> {
+    const { sessionId, description, selectedIndices } = body;
+    const entries = this.sessionStore.get(sessionId);
+    if (!entries) {
+      throw new NotFoundException(
+        'Your session has expired. Please re-upload your .har file.',
+      );
+    }
+    const maxIndex = entries.length - 1;
+    if (selectedIndices && selectedIndices.some((index) => index < 0 || index > maxIndex)) {
+      throw new BadRequestException(
+        'One or more selected entries are invalid. Please refresh and try again.',
+      );
+    }
+    try {
+      return await this.llmService.analyzeSession({ sessionId, description, selectedIndices });
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      if (error instanceof UnprocessableEntityException) {
+        throw error;
+      }
+      if (error instanceof BadGatewayException) {
+        throw error;
+      }
+      throw new BadGatewayException('Unable to analyze the request at this time.');
+    }
   }
 }
