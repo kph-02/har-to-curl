@@ -85,7 +85,7 @@ describe('HarFilterService', () => {
     });
   });
 
-  describe('filter - Phase 3: Content-type filter', () => {
+  describe('filter - Phase 4: Content-type filter', () => {
     it('should keep JSON content types', () => {
       const entries = [
         createMockEntry({
@@ -195,7 +195,58 @@ describe('HarFilterService', () => {
     });
   });
 
-  describe('filter - Phase 4: Header noise removal', () => {
+  describe('filter - Phase 3: URL scheme filter', () => {
+    it('should filter out data: URLs even if content-type is allowed', () => {
+      const entries = [
+        createMockEntry({
+          request: { ...createMockEntry().request, url: 'data:application/json;base64,eyJvayI6dHJ1ZX0=' },
+          response: {
+            ...createMockEntry().response,
+            content: { size: 0, mimeType: 'application/json' },
+          },
+        }),
+        createMockEntry({
+          request: { ...createMockEntry().request, url: 'https://example.com/api/ok' },
+          response: {
+            ...createMockEntry().response,
+            content: { size: 0, mimeType: 'application/json' },
+          },
+        }),
+      ];
+
+      const { entries: filtered, summaries } = service.filter(entries);
+
+      expect(filtered).toHaveLength(1);
+      expect(summaries).toHaveLength(1);
+      expect(filtered[0].request.url).toMatch(/^https:\/\//);
+    });
+
+    it('should filter out wss: URLs even if content-type is allowed', () => {
+      const entries = [
+        createMockEntry({
+          request: { ...createMockEntry().request, url: 'wss://example.com/socket' },
+          response: {
+            ...createMockEntry().response,
+            content: { size: 0, mimeType: 'application/json' },
+          },
+        }),
+        createMockEntry({
+          request: { ...createMockEntry().request, url: 'http://example.com/api/ok' },
+          response: {
+            ...createMockEntry().response,
+            content: { size: 0, mimeType: 'application/json' },
+          },
+        }),
+      ];
+
+      const { entries: filtered } = service.filter(entries);
+
+      expect(filtered).toHaveLength(1);
+      expect(filtered[0].request.url).toMatch(/^http:\/\//);
+    });
+  });
+
+  describe('filter - Phase 5: Header noise removal', () => {
     it('should remove noisy headers', () => {
       const entries = [
         createMockEntry({
@@ -241,7 +292,7 @@ describe('HarFilterService', () => {
     });
   });
 
-  describe('filter - Phase 5: URL-pattern deduplication', () => {
+  describe('filter - Phase 6: URL-pattern deduplication', () => {
     it('should deduplicate by method + pathname', () => {
       const entries = [
         createMockEntry({

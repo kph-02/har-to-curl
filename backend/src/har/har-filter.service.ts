@@ -8,10 +8,11 @@ import { AppConfig } from '../shared/config/app.config';
 
 /**
  * Filters HAR entries to keep only API-relevant requests
- * Five-phase pipeline: method, status, content-type, headers, dedup
+ * Six-phase pipeline: method, status, scheme, content-type, headers, dedup
  */
 @Injectable()
 export class HarFilterService {
+  private readonly ALLOWED_URL_PROTOCOLS = new Set<string>(['http:', 'https:']);
   private readonly ALLOWED_CONTENT_TYPES = [
     'application/json',
     'text/xml',
@@ -58,14 +59,17 @@ export class HarFilterService {
     // Phase 2: Status filter (drop status 0)
     filtered = filtered.filter((e) => e.response.status !== 0);
 
-    // Phase 3: Content-type filter
+    // Phase 3: URL scheme filter (keep only http/https)
+    filtered = filtered.filter((e) => this.isHttpUrl(e.request.url));
+
+    // Phase 4: Content-type filter
     filtered = filtered.filter((e) => {
       const mimeType = e.response.content.mimeType || '';
       const baseType = mimeType.split(';')[0].trim().toLowerCase();
       return this.ALLOWED_CONTENT_TYPES.includes(baseType);
     });
 
-    // Phase 4: Header noise removal
+    // Phase 5: Header noise removal
     filtered = filtered.map((entry) => ({
       ...entry,
       request: {
@@ -78,7 +82,7 @@ export class HarFilterService {
       },
     }));
 
-    // Phase 5: URL-pattern deduplication
+    // Phase 6: URL-pattern deduplication
     const { dedupedEntries, duplicateCounts } = this.deduplicateByUrlPattern(
       filtered,
     );
@@ -120,6 +124,19 @@ export class HarFilterService {
     return headers.filter(
       (h) => !this.NOISY_HEADERS.has(h.name.toLowerCase()),
     );
+  }
+
+  /**
+   * Keep only HTTP(S) URLs. Drops data:, ws:, wss:, blob:, etc.
+   * If URL parsing fails, keep the entry (HAR URLs should be absolute).
+   */
+  private isHttpUrl(url: string): boolean {
+    try {
+      const parsed = new URL(url);
+      return this.ALLOWED_URL_PROTOCOLS.has(parsed.protocol);
+    } catch {
+      return true;
+    }
   }
 
   /**
