@@ -75,7 +75,7 @@ export const ApiDescriptionForm = ({
         className="mt-3 min-h-[120px] bg-zinc-950/60 text-zinc-100 placeholder:text-zinc-500"
       />
       <div className="mt-4 flex justify-end">
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading} variant="outline" className="border-zinc-700">
           Analyze
         </Button>
       </div>

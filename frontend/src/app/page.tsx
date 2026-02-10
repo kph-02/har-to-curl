@@ -70,6 +70,7 @@ export default function Home() {
               <CurlResultPanel
                 matchedEntryIndex={analyzeResult.matchedEntryIndex}
                 curlCommand={analyzeResult.curlCommand}
+                parsedRequest={analyzeResult.parsedRequest}
                 entries={entries}
               />
             ) : null}

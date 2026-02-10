@@ -34,6 +34,14 @@ export const AppConfig = {
     limit: parseInt(process.env.THROTTLE_LIMIT || '10', 10),
   },
 
+  // Curl Execution Configuration
+  curl: {
+    executeTimeoutMs: parseInt(process.env.CURL_EXEC_TIMEOUT_MS || '10000', 10),
+    maxResponseBytes: parseInt(process.env.CURL_EXEC_MAX_RESPONSE_MB || '1', 10) * 1024 * 1024,
+    maxRequestBodyBytes:
+      parseInt(process.env.CURL_EXEC_MAX_REQUEST_BODY_MB || '1', 10) * 1024 * 1024,
+  },
+
   // Server Configuration
   server: {
     port: parseInt(process.env.PORT || '3001', 10),
@@ -77,5 +85,20 @@ export function validateConfig(): void {
 
   if (AppConfig.har.bodyTruncateLimit <= 0 || AppConfig.har.bodyTruncateLimit > 200000) {
     throw new Error('BODY_TRUNCATE_LIMIT must be between 1 and 200000');
+  }
+
+  if (AppConfig.curl.executeTimeoutMs <= 0 || AppConfig.curl.executeTimeoutMs > 60000) {
+    throw new Error('CURL_EXEC_TIMEOUT_MS must be between 1 and 60000');
+  }
+
+  if (AppConfig.curl.maxResponseBytes <= 0 || AppConfig.curl.maxResponseBytes > 50 * 1024 * 1024) {
+    throw new Error('CURL_EXEC_MAX_RESPONSE_MB must be between 1 and 50');
+  }
+
+  if (
+    AppConfig.curl.maxRequestBodyBytes <= 0 ||
+    AppConfig.curl.maxRequestBodyBytes > 50 * 1024 * 1024
+  ) {
+    throw new Error('CURL_EXEC_MAX_REQUEST_BODY_MB must be between 1 and 50');
   }
 }

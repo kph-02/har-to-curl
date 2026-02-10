@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { SharedModule } from './shared/shared.module';
 import { AppConfig } from './shared/config/app.config';
 import { HarModule } from './har/har.module';
+import { CurlModule } from './curl/curl.module';
 
 @Module({
   imports: [
@@ -14,6 +17,13 @@ import { HarModule } from './har/har.module';
       },
     ]),
     HarModule,
+    CurlModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

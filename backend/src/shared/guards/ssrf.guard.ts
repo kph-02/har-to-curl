@@ -1,4 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 
 /**
  * Guard to prevent SSRF attacks by validating URLs
@@ -14,7 +20,8 @@ import { Injectable, CanActivate, ExecutionContext, BadRequestException } from '
  */
 @Injectable()
 export class SsrfGuard implements CanActivate {
-  private readonly isDevelopment = process.env.NODE_ENV === 'development';
+  private readonly isDevelopmentOrTest =
+    process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
 
   private readonly blockedPatterns = [
     // IPv4 private ranges
@@ -70,17 +77,17 @@ export class SsrfGuard implements CanActivate {
     }
 
     // In development mode, allow localhost for local testing
-    if (this.isDevelopment) {
+    if (this.isDevelopmentOrTest) {
       const isLocalhost = this.localhostPatterns.some(pattern => pattern.test(url));
       if (isLocalhost) {
-        return true; // Allow localhost in development
+        return true; // Allow localhost in development/test
       }
     }
 
     // Check against all blocked patterns
     for (const pattern of this.blockedPatterns) {
       if (pattern.test(url)) {
-        throw new BadRequestException(
+        throw new ForbiddenException(
           'Invalid URL: requests to private/internal networks are not allowed',
         );
       }
