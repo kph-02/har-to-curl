@@ -1,4 +1,36 @@
+"use client";
+
+import * as React from "react";
+
+import { HarUploadZone } from "@/components/har-upload-zone";
+import { EntryList } from "@/components/entry-list";
+import { RequestDetailPanel } from "@/components/request-detail-panel";
+import type { HarEntrySummary, UploadResponse } from "@/lib/types";
+
+const DEFAULT_MAX_SIZE_MB: number = 100;
+
 export default function Home() {
+  const [sessionId, setSessionId] = React.useState<string>("");
+  const [entries, setEntries] = React.useState<HarEntrySummary[]>([]);
+  const [selectedIndices, setSelectedIndices] = React.useState<ReadonlySet<number>>(
+    new Set<number>(),
+  );
+  const [inspectedEntry, setInspectedEntry] = React.useState<HarEntrySummary | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = React.useState<boolean>(false);
+
+  const handleUploadSuccess = (response: UploadResponse): void => {
+    setSessionId(response.sessionId);
+    setEntries(response.entries);
+    setSelectedIndices(new Set<number>());
+    setInspectedEntry(null);
+    setIsDetailOpen(false);
+  };
+
+  const handleInspectEntry = (entry: HarEntrySummary): void => {
+    setInspectedEntry(entry);
+    setIsDetailOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <main className="container mx-auto py-8 px-4">
@@ -7,15 +39,29 @@ export default function Home() {
           <p className="text-muted-foreground mb-8">
             Upload a HAR file, describe an API, and get a functional curl command
           </p>
-          
-          {/* Component orchestration will go here */}
+
           <div className="space-y-6">
-            <div className="border border-border rounded-lg p-6 bg-card">
-              <p className="text-sm text-muted-foreground">
-                Components will be wired here in the next step...
-              </p>
-            </div>
+            <HarUploadZone
+              maxSizeMB={DEFAULT_MAX_SIZE_MB}
+              onUploadSuccess={(response: UploadResponse) => handleUploadSuccess(response)}
+            />
+
+            {sessionId && entries.length > 0 ? (
+              <EntryList
+                entries={entries}
+                selectedIndices={selectedIndices}
+                onSelectedIndicesChange={setSelectedIndices}
+                onInspectEntry={handleInspectEntry}
+              />
+            ) : null}
           </div>
+
+          <RequestDetailPanel
+            isOpen={isDetailOpen}
+            sessionId={sessionId}
+            entrySummary={inspectedEntry}
+            onOpenChange={setIsDetailOpen}
+          />
         </div>
       </main>
     </div>

@@ -26,13 +26,21 @@ export async function apiRequest<T>(
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = `${API_BASE_URL}${normalizedEndpoint}`;
 
+  const headers: HeadersInit = (() => {
+    const nextHeaders: Record<string, string> = {};
+    const hasBody: boolean = !!options?.body;
+    const isFormDataBody: boolean =
+      typeof FormData !== "undefined" && options?.body instanceof FormData;
+    if (hasBody && !isFormDataBody) {
+      nextHeaders["Content-Type"] = "application/json";
+    }
+    return { ...nextHeaders, ...(options?.headers || {}) };
+  })();
+
   try {
     const response = await fetch(url, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
+      headers,
     });
 
     if (!response.ok) {
