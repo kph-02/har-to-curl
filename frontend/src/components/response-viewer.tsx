@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import type { ExecutionResult } from "@/lib/types";
 
 type ResponseViewerProps = {
@@ -109,9 +110,12 @@ export const ResponseViewer = ({ result }: ResponseViewerProps) => {
             </Button>
           </div>
           <div className="mt-2 rounded-md border border-zinc-800 bg-zinc-950 p-4">
-            <pre className="whitespace-pre-wrap break-words font-mono text-xs text-zinc-200">
-              {result.body || "No body"}
-            </pre>
+            <Textarea
+              readOnly
+              value={result.body || "No body"}
+              aria-label="Response body"
+              className="min-h-[180px] max-h-[520px] resize-y overflow-auto bg-transparent p-0 border-0 shadow-none font-mono text-xs text-zinc-200 focus-visible:ring-0"
+            />
           </div>
         </div>
       </CardContent>

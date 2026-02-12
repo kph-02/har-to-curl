@@ -4,6 +4,7 @@ import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import type { ExecutionResult, HarEntrySummary, ParsedRequest } from "@/lib/types";
 import { RequestEditor } from "@/components/request-editor";
@@ -106,9 +107,12 @@ export const CurlResultPanel = ({
       </CardHeader>
       <CardContent>
         <div className="rounded-md border border-zinc-800 bg-zinc-950/40 p-4">
-          <pre className="whitespace-pre-wrap break-words font-mono text-xs text-zinc-100">
-            {curlCommand}
-          </pre>
+          <Textarea
+            readOnly
+            value={curlCommand}
+            aria-label="Generated curl command"
+            className="min-h-[160px] max-h-[420px] resize-y overflow-auto bg-transparent p-0 border-0 shadow-none font-mono text-xs text-zinc-100 focus-visible:ring-0"
+          />
         </div>
         <div className="mt-4 flex justify-end">
           <div className="flex items-center gap-2">
